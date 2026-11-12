@@ -46,7 +46,7 @@ steps:
     arguments:
       OCTOPUS_API_KEY: "${{OCTOPUS_API_KEY}}"
       OCTOPUS_URL: "${{OCTOPUS_URL}}"
-      OCTOPUS_SPACE: "Default"
+      OCTOPUS_SPACE: "Kenny"
       PROJECT: "argocd"
       RELEASE_NUMBER: "${{APP_VERSION}}"
       ENVIRONMENTS:
