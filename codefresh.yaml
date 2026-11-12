@@ -1,0 +1,53 @@
+version: "1.0"
+stages: [clone, build, deploy]
+steps:
+  clone:
+    title: Clone
+    type: git-clone
+    stage: clone
+    repo: "${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}"
+    revision: "${{CF_REVISION}}"
+    git: github
+
+  set_version:
+    title: Set version
+    stage: build
+    image: alpine:3.20
+    commands:
+      - cf_export APP_VERSION=1.0.$(date +%s)
+
+  build:
+    title: Build and push image
+    type: build
+    stage: build
+    working_directory: "${{clone}}"
+    image_name: kennethbates/demo-app
+    tag: "${{APP_VERSION}}"
+    registry: ghcr
+    dockerfile: Dockerfile
+
+  create-release:
+    title: Create Octopus release
+    type: octopusdeploy-create-release
+    stage: deploy
+    arguments:
+      OCTOPUS_API_KEY: "${{OCTOPUS_API_KEY}}"
+      OCTOPUS_URL: "${{OCTOPUS_URL}}"
+      OCTOPUS_SPACE: "Default"
+      PROJECT: "argocd"
+      RELEASE_NUMBER: "${{APP_VERSION}}"
+      PACKAGE_VERSION: "${{APP_VERSION}}"
+      RELEASE_NOTES: "Built by Codefresh from ${{CF_SHORT_REVISION}}"
+
+  deploy:
+    title: Deploy to Development
+    type: octopusdeploy-deploy-release
+    stage: deploy
+    arguments:
+      OCTOPUS_API_KEY: "${{OCTOPUS_API_KEY}}"
+      OCTOPUS_URL: "${{OCTOPUS_URL}}"
+      OCTOPUS_SPACE: "Default"
+      PROJECT: "argocd"
+      RELEASE_NUMBER: "${{APP_VERSION}}"
+      ENVIRONMENTS:
+        - "Development"
