@@ -7,7 +7,7 @@ steps:
     stage: clone
     repo: "${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}"
     revision: "${{CF_REVISION}}"
-    git: github
+    git: gitargoctodefresh
 
   set_version:
     title: Set version
