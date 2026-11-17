@@ -1,4 +1,3 @@
-$script = @'
 #!/bin/sh
 set -eu
 REPO_URL="https://github.com/${CF_REPO_OWNER}/${CF_REPO_NAME}"
@@ -19,6 +18,3 @@ jq -n \
   > /codefresh/volume/buildinfo.json
 
 cat /codefresh/volume/buildinfo.json
-'@
-New-Item -ItemType Directory -Path scripts -Force | Out-Null
-[IO.File]::WriteAllText("$PWD\scripts\build-info.sh", ($script -replace "`r`n", "`n"))
