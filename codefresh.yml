@@ -26,6 +26,44 @@ steps:
     registry: ghcr
     dockerfile: Dockerfile
 
+  build_info_json:
+    title: Generate build information
+    stage: build
+    image: alpine:3.20
+    working_directory: "${{clone}}"
+    commands:
+      - apk add --no-cache git jq
+      - |
+        COMMITS=$(git log -n 10 --format='%H%x1f%s' | jq -R -s '
+          split("\n") | map(select(length > 0) | split("\u001f")
+          | {Id: .[0], LinkUrl: ("https://github.com/${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}/commit/" + .[0]), Comment: .[1]})')
+        jq -n \
+          --arg env "Codefresh" \
+          --arg num "${{CF_BUILD_ID}}" \
+          --arg url "${{CF_BUILD_URL}}" \
+          --arg branch "${{CF_BRANCH}}" \
+          --arg root "https://github.com/${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}" \
+          --arg sha "${{CF_REVISION}}" \
+          --argjson commits "$COMMITS" \
+          '{BuildEnvironment:$env, BuildNumber:$num, BuildUrl:$url, Branch:$branch,
+            VcsType:"Git", VcsRoot:$root, VcsCommitNumber:$sha, Commits:$commits}' \
+          > /codefresh/volume/buildinfo.json
+      - cat /codefresh/volume/buildinfo.json
+
+  push_build_info:
+    title: Push build information to Octopus
+    type: octopusdeploy-push-build-information
+    stage: build
+    arguments:
+      OCTOPUS_API_KEY: "${{OCTOPUS_API_KEY}}"
+      OCTOPUS_URL: "${{OCTOPUS_URL}}"
+      OCTOPUS_SPACE: "Kenny"
+      PACKAGE_IDS:
+        - kennethbates/demo-app
+      VERSION: "${{APP_VERSION}}"
+      FILE: /codefresh/volume/buildinfo.json
+      OVERWRITE_MODE: overwrite
+
   create-release:
     title: Create Octopus release
     type: octopusdeploy-create-release
